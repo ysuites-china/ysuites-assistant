@@ -8,8 +8,8 @@
 <style>
 :root { --teal:#00BAB3; --dark:#1a1a2e; --coral:#F08080; }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'Montserrat','PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(160deg,#0c1220,#1a1a2e,#0d2420);min-height:100vh;height:100vh;display:flex;flex-direction:column;align-items:center;overflow:hidden}
-html{height:-webkit-fill-available}
+body{font-family:'Montserrat','PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(160deg,#0c1220,#1a1a2e,#0d2420);height:100%;display:flex;flex-direction:column;align-items:center;overflow:hidden;position:fixed;width:100%;top:0;left:0}
+html{height:100%}
 
 /* Header */
 .header{width:100%;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(0,186,179,0.15);padding:12px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;position:relative;z-index:10}
@@ -34,8 +34,8 @@ html{height:-webkit-fill-available}
 .both-btn:active{background:rgba(255,255,255,0.08)}
 
 /* Chat screen */
-#chat-screen{width:100%;max-width:680px;flex:1;display:none;flex-direction:column;overflow:hidden;height:100vh}
-#messages{flex:1;overflow-y:scroll;overflow-x:hidden;padding:16px 16px 8px;display:flex;flex-direction:column;gap:14px;-webkit-overflow-scrolling:touch;height:0}
+#chat-screen{width:100%;max-width:680px;flex:1;display:none;flex-direction:column;overflow:hidden;min-height:0}
+#messages{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 16px 8px;display:flex;flex-direction:column;gap:14px;-webkit-overflow-scrolling:touch;min-height:0}
 .msg{display:flex;gap:8px;align-items:flex-start;animation:fadeUp 0.25s ease}
 .msg.user{flex-direction:row-reverse}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
