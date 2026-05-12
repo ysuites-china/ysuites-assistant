@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Y Suites Pricing Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Montserrat',sans-serif;background:#f0f4f4;color:#1a1a2e;font-size:13px;}
+
+/* Layout */
+.app{display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:360px;min-width:360px;background:white;border-right:1px solid #e0e0e0;overflow-y:auto;display:flex;flex-direction:column;}
+.preview-pane{flex:1;overflow-y:auto;background:#f0f4f4;padding:24px;}
+
+/* Sidebar header */
+.sb-header{background:#1a1a2e;color:white;padding:16px 20px;}
+.sb-header h2{font-size:14px;font-weight:800;letter-spacing:0.3px;}
+.sb-header p{font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px;}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:2px solid #f0f0f0;}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:11px;font-weight:700;color:#aaa;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;}
+.tab.active{color:#00BAB3;border-bottom-color:#00BAB3;}
+.tab-content{display:none;padding:16px;}
+.tab-content.active{display:block;}
+
+/* Form elements */
+.section-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;color:#00BAB3;margin:14px 0 8px;}
+.section-label:first-child{margin-top:0;}
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:10px;font-weight:600;color:#666;margin-bottom:3px;}
+.field input,.field select{width:100%;padding:7px 10px;border:1.5px solid #e8e8e8;border-radius:7px;font-family:'Montserrat',sans-serif;font-size:12px;color:#1a1a2e;outline:none;transition:border .2s;}
+.field input:focus,.field select:focus{border-color:#00BAB3;}
+
+/* Room rows */
+.room-row{background:#f8fffe;border:1.5px solid #e0f5f4;border-radius:10px;padding:12px;margin-bottom:10px;}
+.room-row-header{font-size:11px;font-weight:800;color:#1a1a2e;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.room-row-header span{color:#00BAB3;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+
+/* Avail select */
+.avail-row{display:grid;grid-template-columns:1fr 80px;gap:6px;align-items:end;}
+
+/* Export button */
+.export-btn{margin:16px;padding:13px;background:#00BAB3;color:white;border:none;border-radius:10px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:0.3px;transition:background .2s;}
+.export-btn:hover{background:#009e98;}
+
+/* Preview card styles */
+.card{background:white;border-radius:18px;overflow:hidden;box-shadow:0 8px 40px rgba(0,186,179,0.12),0 2px 8px rgba(0,0,0,0.06);}
+.p-header{background:#1a1a2e;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;}
+.p-header h1{font-size:12px;font-weight:800;color:white;text-transform:uppercase;line-height:1.5;}
+.p-header p{font-size:9px;color:rgba(255,255,255,0.45);margin-top:4px;}
+.p-header img{height:30px;width:auto;}
+.p-accent{height:4px;background:linear-gradient(90deg,#00BAB3 60%,#F08080 100%);}
+.p-sec-title{background:#00BAB3;color:white;text-align:center;padding:8px;font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;}
+table{width:100%;border-collapse:collapse;}
+.pt th{background:#1a1a2e;color:white;padding:8px 6px;font-size:8.5px;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:0.3px;}
+.pt th:first-child{text-align:left;padding-left:14px;}
+.pt td{padding:8px 6px;font-size:10px;text-align:center;border-bottom:1px solid #eef8f8;vertical-align:middle;}
+.pt td.type{text-align:left;padding-left:14px;font-weight:800;font-size:10px;border-left:3px solid #00BAB3;}
+.pt td.floor{color:#777;font-size:9.5px;}
+.pt tr:nth-child(even) td{background:#f7fdfd;}
+.strike{text-decoration:line-through;color:#ccc;font-size:9px;}
+.hot{color:#F08080;font-weight:800;font-size:11px;}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:8.5px;font-weight:700;white-space:nowrap;}
+.bg{background:#e0faf9;color:#007a75;border:1.5px solid #00BAB3;}
+.bo{background:#FFF3E0;color:#a05000;border:1.5px solid #F9CB9C;}
+.br{background:#FFE8E8;color:#c0392b;border:1.5px solid #F08080;}
+.bb{background:#EEF2FF;color:#2d5aac;border:1.5px solid #6D9EEB;font-size:8px;}
+.p-note{padding:8px 14px;font-size:9px;color:#666;background:#FFFBF0;border-top:2px solid #F9CB9C;line-height:1.6;}
+.p-note strong{color:#a05000;}
+.p-promo-hdr{background:#F08080;color:white;text-align:center;padding:9px;font-size:11px;font-weight:900;letter-spacing:0.6px;text-transform:uppercase;margin-top:3px;}
+.p-promo-sub{background:#1a1a2e;color:rgba(255,255,255,0.6);text-align:center;padding:5px;font-size:9px;}
+.p-promo-sub strong{color:#F9CB9C;}
+.prt th{background:#f5f5f5;color:#1a1a2e;padding:8px 6px;font-size:8.5px;font-weight:700;text-align:center;text-transform:uppercase;border-bottom:2px solid #e0e0e0;}
+.prt th:first-child{text-align:left;padding-left:14px;}
+.prt td{font-size:10px;vertical-align:middle;padding:10px 8px;border-bottom:1px solid #f0f0f0;text-align:center;}
+.prt td:first-child{font-weight:700;text-align:left;padding-left:14px;}
+.prt tr:last-child td{border-bottom:none;}
+.prt tr:nth-child(even) td{background:#fafafa;}
+.pb{color:#F08080;font-weight:900;font-size:13px;display:block;}
+.pc{display:inline-block;background:#f5f5f5;border:1px dashed #aaa;border-radius:4px;padding:1px 6px;font-size:8px;color:#555;margin-top:3px;letter-spacing:0.5px;font-weight:600;}
+.pg{color:#007a75;font-weight:700;}
+.p-cancel{padding:11px 16px;background:#fff8f8;border-top:3px solid #F08080;}
+.p-cancel-title{font-size:9px;font-weight:800;margin-bottom:3px;text-transform:uppercase;}
+.p-cancel-title span{color:#F08080;}
+.p-cancel p{font-size:9px;color:#666;line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-header">
+      <h2>Y Suites Pricing Editor</h2>
+      <p>修改内容后预览自动更新</p>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('rooms')">房型价格</div>
+      <div class="tab" onclick="switchTab('promo')">促销优惠</div>
+      <div class="tab" onclick="switchTab('general')">基本信息</div>
+    </div>
+
+    <!-- TAB: ROOMS -->
+    <div class="tab-content active" id="tab-rooms">
+      <div id="rooms-form"></div>
+    </div>
+
+    <!-- TAB: PROMO -->
+    <div class="tab-content" id="tab-promo">
+      <div class="section-label">Rent Rebate</div>
+      <div class="grid-3">
+        <div class="field"><label>Full Year</label><input id="p-fy-rebate" value="$1,000" oninput="render()"></div>
+        <div class="field"><label>Half Year</label><input id="p-hy-rebate" value="$500" oninput="render()"></div>
+        <div class="field"><label>Semester</label><input id="p-sem-rebate" value="$150" oninput="render()"></div>
+      </div>
+      <div class="section-label">Promo Codes</div>
+      <div class="field"><label>Full Year Code</label><input id="p-fy-code" value="S226MGEARLYTI" oninput="render()"></div>
+      <div class="field"><label>Half Year Code</label><input id="p-hy-code" value="S226MGEARLYTFY" oninput="render()"></div>
+      <div class="section-label">Lease End Dates</div>
+      <div class="field"><label>Full Year ends</label><input id="p-fy-end" value="7/14 July 2027" oninput="render()"></div>
+      <div class="field"><label>Half Year ends</label><input id="p-hy-end" value="26 Jan or 2 Feb 2027" oninput="render()"></div>
+      <div class="field"><label>Semester ends</label><input id="p-sem-end" value="22 Dec 2026" oninput="render()"></div>
+      <div class="section-label">其他优惠</div>
+      <div class="field"><label>团体订房额外折扣</label><input id="p-group" value="$200" oninput="render()"></div>
+      <div class="field"><label>接机补贴上限</label><input id="p-airport" value="$50" oninput="render()"></div>
+    </div>
+
+    <!-- TAB: GENERAL -->
+    <div class="tab-content" id="tab-general">
+      <div class="section-label">基本信息</div>
+      <div class="field"><label>更新日期</label><input id="g-updated" value="30th Apr 2026" oninput="render()"></div>
+      <div class="field"><label>促销期间</label><input id="g-promo-period" value="30 Apr 2026 – 31 May 2026" oninput="render()"></div>
+      <div class="field"><label>入住日期</label><input id="g-lease-start" value="14 / 21 / 28 July 2026" oninput="render()"></div>
+    </div>
+
+    <button class="export-btn" onclick="exportHTML()">⬇ 导出 HTML 文件</button>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-pane">
+    <div id="preview"></div>
+  </div>
+</div>
+
+<script>
+const LOGO = "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7ty5uH79uq5lICJYLBbcuHEDbdu2RY0aNRz23iIea9u2bWjUqBELrCLQokULevDBB+Hn5wcfHx+ULFkSFosFOTk5yM7OxrVr15CWloa0tDRs3rzZdHU7cuRIKlGiBIgct0usqipsNhuSk5OxbNkyp73z888/r+X1s1gsDrU/ubm5GD58eLHfbdSoUeTl5aVLva9atQpJSUl3LNuYMWPIarU69PlmRtTNypUrsXHjRsnoMeGs9127di0SExNNa9Nr165NVapUQeXKlfHAAw+gdOnSKFmyJFRVRXZ2NjIzM5Geno60tDScP38eO3bsMPf8tHbtWiIikmXZYUf/FUUhIqLdu3cb3iO3bNni8PcpDOJ58+bNM/ydL126RKqqkqqqDs+P9emnn3I81m1o06YNjR8/ntatW0enT58ucs44u91O586dox07dtD3339P0dHRFBkZ6dT61nOMzJo1y6nvNm3aNF1tgFnrfcSIEeTM55uZwtg3d3rf2NhYU9nzLl260PTp02nHjh106dKlIr9PVlYWnThxgpKSkmjatGnUq1cvCg0Ndfg7Fmtfr3fv3vTMM884fGvQYrFAURTUqVMHs2fPpu7duxumMvv06YNt27bBYrEY5skSz7l06RI6d+5sqKL+448/yNfXV/MaOgqr1QpFUTB06FAsW7aMUlJS2JOFf9KYREVFoXnz5vDz8ytwpSi2We/k8bBYLLDZbKhUqRIqVaqEkJAQ7eeZmZl06NAhJCcnY926dfjll18Mq/uMjAyULFnSoWNH2Jfr1687te2uX78OWZYdau9EPWVlZd1z2e677z5d6j0zM/Oun83JyYHNZvOYEAtRN4VpNz3GhLPe19ljEAA++ugjat++PRo0aABvb+9bfq4oyl29hcKGlixZEtWqVUO1atXQrFkz7edpaWm0Z88ebNq0CUlJSXf14OpCeno6KYriUM9HQV6QF154wVDVPGHCBEO9WOI93333XUPfc/To0bpm2xf199///tfjvVjDhg2jv/766xZPrd1uJ1mWizWOhNdRfI/dbte8v3m5evUqrV69mt5//33d2yErK0srm6PHx5QpU5zaj2JiYhw+XkQ9ZWZm3tO7ZWdn61bvgwcPvmvZxGf1mgvMeoPFoEGDyBljwlnvO3bsWKeMwZCQEJo9ezZdu3btljlG2L3i1K+wn+J77HZ7gd9z8uRJ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";
+
+const ROOMS = [
+  {type:"Studio Premium",      floor:"High Floor 🔥", fy:"A$839", hy_orig:"A$869", hy_promo:"A$819", sem:"A$909",   ae_text:"2 rooms",          ae_style:"o", aj_text:"Available",              aj_style:"g"},
+  {type:"Studio Premium",      floor:"Low Floor",     fy:"A$819", hy_orig:"A$849", hy_promo:"A$819", sem:"A$889",   ae_text:"5 rooms",          ae_style:"o", aj_text:"Available",              aj_style:"g"},
+  {type:"Studio Deluxe",       floor:"High Floor",    fy:"A$939", hy_orig:"A$969", hy_promo:"A$939", sem:"A$1,009", ae_text:"sold out",         ae_style:"r", aj_text:"sold out",               aj_style:"r"},
+  {type:"Studio Deluxe",       floor:"Low Floor",     fy:"A$919", hy_orig:"A$949", hy_promo:"A$919", sem:"A$989",   ae_text:"sold out",         ae_style:"r", aj_text:"sold out",               aj_style:"r"},
+  {type:"2 Bedroom Apartment", floor:"High Floor",    fy:"A$759", hy_orig:"A$789", hy_promo:"A$759", sem:"A$829",   ae_text:"2 beds (Female)",  ae_style:"o", aj_text:"1 set (28 Jul) + 4 beds",aj_style:"b"},
+  {type:"2 Bedroom Apartment", floor:"Low Floor",     fy:"A$739", hy_orig:"A$769", hy_promo:"A$739", sem:"A$809",   ae_text:"1 set",            ae_style:"o", aj_text:"3 sets",                 aj_style:"o"},
+  {type:"Ensuite Premium",     floor:"Low Floor 🔥",  fy:"A$779", hy_orig:"A$809", hy_promo:"A$779", sem:"A$849",   ae_text:"sold out",         ae_style:"r", aj_text:"3 rooms",                aj_style:"o"},
+];
+
+const STYLE_OPTS = [
+  {value:"g", label:"🟢 Green (Available)"},
+  {value:"o", label:"🟡 Orange (Limited)"},
+  {value:"r", label:"🔴 Red (Sold Out)"},
+  {value:"b", label:"🔵 Blue (Special)"},
+];
+
+function buildRoomsForm() {
+  const container = document.getElementById('rooms-form');
+  container.innerHTML = ROOMS.map((r,i) => `
+    <div class="room-row">
+      <div class="room-row-header"><span>${i+1}.</span> ${r.type} — ${r.floor}</div>
+      <div class="grid-2">
+        <div class="field"><label>Full Year</label><input id="r${i}-fy" value="${r.fy}" oninput="updateRoom(${i},'fy',this.value)"></div>
+        <div class="field"><label>Semester</label><input id="r${i}-sem" value="${r.sem}" oninput="updateRoom(${i},'sem',this.value)"></div>
+        <div class="field"><label>Half Year 划线</label><input id="r${i}-hyo" value="${r.hy_orig}" oninput="updateRoom(${i},'hy_orig',this.value)"></div>
+        <div class="field"><label>Half Year 促销</label><input id="r${i}-hyp" value="${r.hy_promo}" oninput="updateRoom(${i},'hy_promo',this.value)"></div>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:#666;margin:8px 0 6px;">Early Checkin / Short Term</div>
+      <div class="avail-row">
+        <div class="field" style="margin:0"><input id="r${i}-aet" value="${r.ae_text}" oninput="updateRoom(${i},'ae_text',this.value)"></div>
+        <div class="field" style="margin:0"><select id="r${i}-aes" onchange="updateRoom(${i},'ae_style',this.value)">${STYLE_OPTS.map(o=>`<option value="${o.value}"${r.ae_style===o.value?' selected':''}>${o.label}</option>`).join('')}</select></div>
+      </div>
+      <div style="font-size:10px;font-weight:700;color:#666;margin:8px 0 6px;">July Checkin</div>
+      <div class="avail-row">
+        <div class="field" style="margin:0"><input id="r${i}-ajt" value="${r.aj_text}" oninput="updateRoom(${i},'aj_text',this.value)"></div>
+        <div class="field" style="margin:0"><select id="r${i}-ajs" onchange="updateRoom(${i},'aj_style',this.value)">${STYLE_OPTS.map(o=>`<option value="${o.value}"${r.aj_style===o.value?' selected':''}>${o.label}</option>`).join('')}</select></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateRoom(i, key, val) {
+  ROOMS[i][key] = val;
+  render();
+}
+
+function v(id){ return document.getElementById(id)?.value || ''; }
+
+function badge(text, style){ return `<span class="badge b${style}">${text}</span>`; }
+
+function renderRows(){
+  let html='', prev='';
+  for(let i=0;i<ROOMS.length;i++){
+    const r=ROOMS[i];
+    const cnt=ROOMS.filter(x=>x.type===r.type).length;
+    const tc=r.type!==prev?`<td class="type" rowspan="${cnt}">${r.type}</td>`:'';
+    html+=`<tr>${tc}<td class="floor">${r.floor}</td><td>${r.fy}</td><td><span class="strike">${r.hy_orig}</span> <span class="hot">${r.hy_promo}</span></td><td>${r.sem}</td><td>${badge(r.ae_text,r.ae_style)}</td><td>${badge(r.aj_text,r.aj_style)}</td></tr>`;
+    prev=r.type;
+  }
+  return html;
+}
+
+function render(){
+  const updated=v('g-updated'), period=v('g-promo-period'), lsd=v('g-lease-start');
+  const fyR=v('p-fy-rebate'), hyR=v('p-hy-rebate'), semR=v('p-sem-rebate');
+  const fyC=v('p-fy-code'), hyC=v('p-hy-code');
+  const fyE=v('p-fy-end'), hyE=v('p-hy-end'), semE=v('p-sem-end');
+  const grp=v('p-group'), air=v('p-airport');
+
+  document.getElementById('preview').innerHTML = `
+  <div class="card">
+    <div class="p-header">
+      <div><h1>Y Suites on Margaret<br>S2 2026 — Pricing, Promo &amp; Availability</h1><p>Updated: ${updated}</p></div>
+      <img src="data:image/png;base64,${LOGO}" alt="Y Suites">
+    </div>
+    <div class="p-accent"></div>
+    <div class="p-sec-title">Y Suites on Margaret — S2 2026</div>
+    <table class="pt">
+      <thead><tr><th>Roomtypes</th><th>Floor</th><th>Full Year</th><th>Half Year</th><th>Semester</th><th>Early Checkin / Short Term*</th><th>July Checkin</th></tr></thead>
+      <tbody>${renderRows()}</tbody>
+    </table>
+    <div class="p-note">*Short-term lease：<strong>即日起可入住，退租日期不晚于7.1，总租期时长不短于4周。</strong>适用Half Year划线前价格。</div>
+    <div class="p-promo-hdr">🔥 Y Suites on Margaret — S2 2026 May Stay &amp; Safe</div>
+    <div class="p-promo-sub">${period} ｜ <strong>Lease Start Dates: ${lsd}</strong></div>
+    <table class="prt">
+      <thead><tr><th style="width:16%"></th><th>Full Year<br><span style="font-weight:400;font-size:8px;text-transform:none">${fyE}</span></th><th>Half Year<br><span style="font-weight:400;font-size:8px;text-transform:none">${hyE}</span></th><th>Semester<br><span style="font-weight:400;font-size:8px;text-transform:none">${semE}</span></th></tr></thead>
+      <tbody>
+        <tr><td>All Roomtypes</td><td><span class="pb">${fyR} Rent Rebate</span><span class="pc">${fyC}</span></td><td><span class="pb">${hyR} Rent Rebate</span><span style="display:block;color:#555;font-size:8.5px;margin-top:2px;">适用Full Year价格</span><span class="pc">${hyC}</span></td><td><span class="pb">${semR} Rent Rebate</span></td></tr>
+        <tr><td>Studio Premium</td><td><span class="pg">申请LF，免费升级HF房间（先到先得）</span></td><td><span class="pg">申请LF，免费升级HF房间（先到先得）</span></td><td style="color:#ccc;">—</td></tr>
+        <tr><td>Group Booking</td><td colspan="2" style="text-align:center;font-weight:600;">3人或以上成团递交，每人享受额外 <span style="color:#F08080;font-weight:900;font-size:12px;">${grp}</span> 租金抵扣</td><td style="color:#ccc;">—</td></tr>
+        <tr><td>入住礼包</td><td colspan="3" style="text-align:center;font-weight:600;">接机补贴（凭机场至Margaret交通票据兑换Rebate，${air}澳币封顶）<span style="display:block;color:#555;font-weight:400;margin-top:3px;">✚ 全新床品套装</span></td></tr>
+      </tbody>
+    </table>
+    <div class="p-cancel">
+      <div class="p-cancel-title">Cancellation Policy for <span>"No Visa, No Offer, No Pay"</span></div>
+      <p>All bookings are eligible for free cancellation if notice is provided at least <strong>7 days</strong> prior to the student's lease commencement date, along with <strong>official documentation</strong> verifying the student's inability to obtain an Australian visa or university offer before the lease start date.</p>
+    </div>
+  </div>`;
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    const names=['rooms','promo','general'];
+    t.classList.toggle('active', names[i]===name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function exportHTML(){
+  const updated=v('g-updated'), period=v('g-promo-period'), lsd=v('g-lease-start');
+  const fyR=v('p-fy-rebate'), hyR=v('p-hy-rebate'), semR=v('p-sem-rebate');
+  const fyC=v('p-fy-code'), hyC=v('p-hy-code');
+  const fyE=v('p-fy-end'), hyE=v('p-hy-end'), semE=v('p-sem-end');
+  const grp=v('p-group'), air=v('p-airport');
+
+  function staticBadge(text,style){
+    const cls={g:'g',o:'o',r:'r',b:'b'};
+    return `<span class="badge ${cls[style]}">${text}</span>`;
+  }
+  function staticRows(){
+    let h='',prev='';
+    for(const r of ROOMS){
+      const cnt=ROOMS.filter(x=>x.type===r.type).length;
+      const tc=r.type!==prev?`<td class="type" rowspan="${cnt}">${r.type}</td>`:'';
+      h+=`<tr>${tc}<td class="floor">${r.floor}</td><td>${r.fy}</td><td><span class="strike">${r.hy_orig}</span> <span class="hot">${r.hy_promo}</span></td><td>${r.sem}</td><td>${staticBadge(r.ae_text,r.ae_style)}</td><td>${staticBadge(r.aj_text,r.aj_style)}</td></tr>`;
+      prev=r.type;
+    }
+    return h;
+  }
+
+  const out = `<!DOCTYPE html>
+<html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Y Suites on Margaret - S2 2026 Pricing</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Montserrat',sans-serif;background:#f0f4f4;padding:28px 20px;color:#1a1a2e;}
+.card{background:white;border-radius:18px;overflow:hidden;max-width:960px;margin:0 auto;box-shadow:0 8px 40px rgba(0,186,179,0.12),0 2px 8px rgba(0,0,0,0.06);}
+.header{background:#1a1a2e;padding:20px 28px;display:flex;justify-content:space-between;align-items:center;}
+.header h1{font-size:13.5px;font-weight:800;color:white;text-transform:uppercase;letter-spacing:0.4px;line-height:1.5;}
+.header p{font-size:10px;color:rgba(255,255,255,0.45);margin-top:5px;}
+.header img{height:36px;width:auto;}
+.accent-bar{height:4px;background:linear-gradient(90deg,#00BAB3 60%,#F08080 100%);}
+.section-title{background:#00BAB3;color:white;text-align:center;padding:9px;font-size:11.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;}
+table{width:100%;border-collapse:collapse;}
+.pt th{background:#1a1a2e;color:white;padding:10px 8px;font-size:9.5px;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:0.4px;}
+.pt th:first-child{text-align:left;padding-left:16px;}
+.pt td{padding:10px 8px;font-size:11.5px;text-align:center;border-bottom:1px solid #eef8f8;vertical-align:middle;}
+.pt td.type{text-align:left;padding-left:16px;font-weight:800;font-size:11px;border-left:4px solid #00BAB3;}
+.pt td.floor{color:#777;font-size:10.5px;}
+.pt tr:nth-child(even) td{background:#f7fdfd;}
+.strike{text-decoration:line-through;color:#ccc;font-size:10px;}
+.hot{color:#F08080;font-weight:800;font-size:13px;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap;}
+.g{background:#e0faf9;color:#007a75;border:1.5px solid #00BAB3;}
+.o{background:#FFF3E0;color:#a05000;border:1.5px solid #F9CB9C;}
+.r{background:#FFE8E8;color:#c0392b;border:1.5px solid #F08080;}
+.b{background:#EEF2FF;color:#2d5aac;border:1.5px solid #6D9EEB;font-size:9px;}
+.note{padding:10px 16px;font-size:10.5px;color:#666;background:#FFFBF0;border-top:2px solid #F9CB9C;line-height:1.7;}
+.note strong{color:#a05000;}
+.promo-hdr{background:#F08080;color:white;text-align:center;padding:11px;font-size:12.5px;font-weight:900;letter-spacing:0.8px;text-transform:uppercase;margin-top:3px;}
+.promo-sub{background:#1a1a2e;color:rgba(255,255,255,0.6);text-align:center;padding:6px;font-size:10.5px;}
+.promo-sub strong{color:#F9CB9C;}
+.prt th{background:#f5f5f5;color:#1a1a2e;padding:10px 8px;font-size:9.5px;font-weight:700;text-align:center;text-transform:uppercase;border-bottom:2px solid #e0e0e0;}
+.prt th:first-child{text-align:left;padding-left:16px;}
+.prt td{font-size:11px;vertical-align:middle;padding:12px 10px;border-bottom:1px solid #f0f0f0;text-align:center;}
+.prt td:first-child{font-weight:700;text-align:left;padding-left:16px;}
+.prt tr:last-child td{border-bottom:none;}
+.prt tr:nth-child(even) td{background:#fafafa;}
+.pb{color:#F08080;font-weight:900;font-size:15px;display:block;}
+.pc{display:inline-block;background:#f5f5f5;border:1px dashed #aaa;border-radius:4px;padding:2px 8px;font-size:9px;color:#555;margin-top:4px;letter-spacing:0.5px;font-weight:600;}
+.pg{color:#007a75;font-weight:700;}
+.cancel{padding:13px 18px;background:#fff8f8;border-top:3px solid #F08080;}
+.cancel-title{font-size:10.5px;font-weight:800;margin-bottom:4px;text-transform:uppercase;}
+.cancel-title span{color:#F08080;}
+.cancel p{font-size:10px;color:#666;line-height:1.8;}
+</style></head><body>
+<div class="card">
+<div class="header"><div><h1>Y Suites on Margaret<br>S2 2026 — Pricing, Promo &amp; Availability</h1><p>Updated: ${updated}</p></div><img src="data:image/png;base64,${LOGO}" alt="Y Suites"></div>
+<div class="accent-bar"></div>
+<div class="section-title">Y Suites on Margaret — S2 2026</div>
+<table class="pt"><thead><tr><th>Roomtypes</th><th>Floor</th><th>Full Year Lease</th><th>Half Year Lease</th><th>Semester Lease</th><th>Availability (Early Checkin / Short Term*)</th><th>Availability (July Checkin)</th></tr></thead><tbody>${staticRows()}</tbody></table>
+<div class="note">*Short-term lease：<strong>即日起可入住，退租日期不晚于7.1，总租期时长不短于4周。</strong>适用Half Year划线前价格。</div>
+<div class="promo-hdr">🔥 Y Suites on Margaret — S2 2026 May Stay &amp; Safe</div>
+<div class="promo-sub">${period} ｜ <strong>Lease Start Dates: ${lsd}</strong></div>
+<table class="prt"><thead><tr><th style="width:16%"></th><th>Full Year Lease<br><span style="font-weight:400;font-size:9px;text-transform:none">${fyE}</span></th><th>Half Year Lease<br><span style="font-weight:400;font-size:9px;text-transform:none">${hyE}</span></th><th>Semester Lease<br><span style="font-weight:400;font-size:9px;text-transform:none">${semE}</span></th></tr></thead>
+<tbody>
+<tr><td>All Roomtypes</td><td><span class="pb">${fyR} Rent Rebate</span><span class="pc">${fyC}</span></td><td><span class="pb">${hyR} Rent Rebate</span><span style="display:block;color:#555;font-size:9.5px;margin-top:2px;">适用Full Year价格</span><span class="pc">${hyC}</span></td><td><span class="pb">${semR} Rent Rebate</span></td></tr>
+<tr><td>Studio Premium</td><td><span class="pg">申请LF，免费升级HF房间（先到先得）</span></td><td><span class="pg">申请LF，免费升级HF房间（先到先得）</span></td><td style="color:#ccc;">—</td></tr>
+<tr><td>Group Booking</td><td colspan="2" style="text-align:center;font-weight:600;">3人或以上成团递交，每人享受额外 <span style="color:#F08080;font-weight:900;font-size:14px;">${grp}</span> 租金抵扣</td><td style="color:#ccc;">—</td></tr>
+<tr><td>入住礼包</td><td colspan="3" style="text-align:center;font-weight:600;">接机补贴（凭机场至Margaret交通票据兑换Rebate，${air}澳币封顶）<span style="display:block;color:#555;font-weight:400;margin-top:4px;">✚ 全新床品套装</span></td></tr>
+</tbody></table>
+<div class="cancel"><div class="cancel-title">Cancellation Policy for <span>"No Visa, No Offer, No Pay"</span></div><p>All bookings are eligible for free cancellation if notice is provided at least <strong>7 days</strong> prior to the student's lease commencement date, along with <strong>official documentation</strong> verifying the student's inability to obtain an Australian visa or university offer before the lease start date.</p></div>
+</div></body></html>`;
+
+  const blob = new Blob([out], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'YSuites_MG_Pricing_' + new Date().toISOString().slice(0,10) + '.html';
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════════
+// 🔄 自动从GitHub Pages的 data/availability.json 拉取最新房态
+// ═══════════════════════════════════════════════════════════
+
+function formatAvail(count, isSet) {
+  if (count <= 0) return {text: 'sold out', style: 'r'};
+  if (isSet) {
+    if (count === 1) return {text: '1 set', style: 'o'};
+    return {text: count + ' sets', style: count <= 3 ? 'o' : 'g'};
+  }
+  if (count === 1) return {text: '1 room', style: 'o'};
+  return {text: count + ' rooms', style: count <= 5 ? 'o' : 'g'};
+}
+
+const CATEGORY_TO_ROOM_IDX = {
+  'SP-High': 0, 'SP-Low': 1, 'SD-High': 2, 'SD-Low': 3,
+  '2BR-High': 4, '2BR-Low': 5, 'ENP': 6
+};
+
+async function loadLatestAvailability() {
+  try {
+    const res = await fetch('../data/availability.json?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const today = new Date().toISOString().slice(0, 10);
+    const julyKey = '2026-07-14';
+    const earlyAvail = data.availability[today] || data.availability[Object.keys(data.availability)[0]];
+    const julyAvail = data.availability[julyKey];
+
+    for (const [catCode, roomIdx] of Object.entries(CATEGORY_TO_ROOM_IDX)) {
+      const isSet = catCode.startsWith('2BR');
+      if (earlyAvail && earlyAvail[catCode] !== undefined) {
+        const f = formatAvail(earlyAvail[catCode], isSet);
+        ROOMS[roomIdx].ae_text = f.text;
+        ROOMS[roomIdx].ae_style = f.style;
+      }
+      if (julyAvail && julyAvail[catCode] !== undefined) {
+        const f = formatAvail(julyAvail[catCode], isSet);
+        ROOMS[roomIdx].aj_text = f.text;
+        ROOMS[roomIdx].aj_style = f.style;
+      }
+    }
+
+    const updatedField = document.getElementById('g-updated');
+    if (updatedField && data.lastUpdated) {
+      const d = new Date(data.lastUpdated);
+      updatedField.value = d.toLocaleDateString('zh-CN', {year:'numeric', month:'2-digit', day:'2-digit'}).replace(/\//g, '-');
+    }
+
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:#e0faf9;color:#007a75;padding:8px 14px;font-size:11px;font-weight:600;border-bottom:1px solid #00BAB3;text-align:center;';
+    banner.textContent = '✓ 已加载最新房态 · 数据时间：' + new Date(data.lastUpdated).toLocaleString('zh-CN', {timeZone:'Asia/Shanghai'}) + ' · 规则：30天连续无占位';
+    document.body.insertBefore(banner, document.body.firstChild);
+  } catch (e) {
+    console.warn('Auto-load failed:', e.message);
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:#FFE8E8;color:#c0392b;padding:8px 14px;font-size:11px;font-weight:600;border-bottom:1px solid #F08080;text-align:center;';
+    banner.textContent = '⚠ 未能加载实时房态 (' + e.message + ')，显示的是模板默认值，请手动核对';
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
+}
+
+(async () => {
+  await loadLatestAvailability();
+  buildRoomsForm();
+  render();
+})();
+
+/* old sync init replaced:
+
+*/
+</script>
+</body>
+</html>
