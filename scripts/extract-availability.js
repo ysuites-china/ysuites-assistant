@@ -1,11 +1,14 @@
 /**
  * Extract availability data from RMS Cloud Booking Chart.
- * 
+ *
+ * AVAILABILITY RULE: A unit counts as "available" on date D only if it is
+ * free on D AND has no reservation overlapping the next 30 days.
+ *
  * HOW TO RUN:
  *   1. Open https://app12.rmscloud.com/ and log in
- *   2. Click Charts → Booking Chart
+ *   2. (Optional) navigate to Booking Chart so session is warm
  *   3. Open DevTools Console (F12), paste this entire script
- *   4. The script will fetch data and copy the JSON to clipboard / log it
+ *   4. The script will fetch data and stash JSON on window.__availJson
  *
  * Configured for: Y Suites on Margaret (Property ID 9)
  */
@@ -14,23 +17,23 @@
   const PROPERTY_CODE = 'YSMG';
   const PROPERTY_NAME = 'Y Suites on Margaret';
   const DAYS_AHEAD = 180;
+  const LOOKAHEAD_DAYS = 30; // 30-day continuous availability rule
   const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 
-  // Category name simplifier
   const simplify = (name) => {
     let s = name.replace(/\s*YSMG\s*$/i, '').trim();
     s = s.replace(/\s*\(High Floor\)/i, '-High').replace(/\s*\(Low Floor\)/i, '-Low');
     return s.trim();
   };
 
-  // 1. Get categories
+  // 1. Categories
   const opts = await fetch('/api/BookingChart/InitializeOptions', {credentials: 'include'}).then(r => r.json());
   const myCats = opts.Categories.filter(c => c.PropertyId === PROPERTY_ID && !c.Inactive);
   const catMap = {};
   myCats.forEach(c => { catMap[c.CatId] = simplify(c.CategoryName); });
   const myCatIds = new Set(Object.keys(catMap).map(Number));
 
-  // 2. Get all reservations (use far-past lastModifiedDate to get everything, not just delta)
+  // 2. All reservations (use lastModifiedDate=2020 to get full dataset, not delta)
   const fromStr = encodeURIComponent(`${TODAY.getDate()}/${TODAY.getMonth()+1}/${TODAY.getFullYear()}`);
   const end = new Date(TODAY); end.setDate(end.getDate() + DAYS_AHEAD);
   const toStr = encodeURIComponent(`${end.getDate()}/${end.getMonth()+1}/${end.getFullYear()}`);
@@ -38,38 +41,30 @@
     method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}', credentials: 'include'
   }).then(r => r.json());
 
-  // 3. Filter to active reservations for this property
-  const ACTIVE = resp.Reservations.filter(r =>
-    myCatIds.has(r.OriginalCatId) &&
-    r.ResStatus !== 'Cancelled' &&
-    r.ResStatus !== 'Quote' &&
-    !r.IsEvent
-  );
+  // 3. Active reservations (this property, non-cancelled)
+  const ACTIVE = resp.Reservations.filter(r => myCatIds.has(r.OriginalCatId) && r.ResStatus !== 'Cancelled' && r.ResStatus !== 'Quote' && !r.IsEvent)
+    .map(r => ({catId: r.OriginalCatId, areaId: r.OriginalAreaId, s: new Date(r.start_date).getTime(), e: new Date(r.end_date).getTime()}));
 
-  // 4. Total units per category (from all area IDs ever seen)
-  const totalsSet = {};
-  for (const cid of myCatIds) totalsSet[cid] = new Set();
-  resp.Reservations.forEach(r => {
-    if (myCatIds.has(r.OriginalCatId)) totalsSet[r.OriginalCatId].add(r.OriginalAreaId);
-  });
-  const totals = {}; for (const cid of myCatIds) totals[cid] = totalsSet[cid].size;
+  // 4. Total units per category (from all areas ever seen)
+  const areasByCat = {}; for (const cid of myCatIds) areasByCat[cid] = new Set();
+  resp.Reservations.forEach(r => { if (myCatIds.has(r.OriginalCatId)) areasByCat[r.OriginalCatId].add(r.OriginalAreaId); });
+  const totals = {}; for (const cid of myCatIds) totals[cid] = areasByCat[cid].size;
 
-  // 5. Per-day availability
+  // 5. For each (date, category), count areas with NO reservation overlap in [date, date+30days)
   const avail = {};
   for (let i = 0; i < DAYS_AHEAD; i++) {
     const d = new Date(TODAY); d.setDate(d.getDate() + i);
     const ds = d.toISOString().slice(0,10);
-    const ds_ms = d.getTime(); const de_ms = ds_ms + 86400000;
+    const winStart = d.getTime();
+    const winEnd = winStart + LOOKAHEAD_DAYS * 86400000;
     const cats = {};
     for (const cid of myCatIds) {
-      const occ = new Set();
+      const occupied = new Set();
       for (const r of ACTIVE) {
-        if (r.OriginalCatId !== cid) continue;
-        if (new Date(r.start_date).getTime() < de_ms && new Date(r.end_date).getTime() > ds_ms) {
-          occ.add(r.OriginalAreaId);
-        }
+        if (r.catId !== cid) continue;
+        if (r.s < winEnd && r.e > winStart) occupied.add(r.areaId);
       }
-      cats[catMap[cid]] = totals[cid] - occ.size;
+      cats[catMap[cid]] = totals[cid] - occupied.size;
     }
     avail[ds] = cats;
   }
@@ -78,6 +73,8 @@
     lastUpdated: new Date().toISOString(),
     propertyName: PROPERTY_NAME,
     propertyCode: PROPERTY_CODE,
+    availabilityRule: '30day-continuous',
+    availabilityNote: '剩余数 = 在该日期当天空出，且未来30天内连续无其他订单占位的单元数',
     categoryDisplayNames: {
       "SP-High": "Studio Premium (高楼层)",
       "SP-Low": "Studio Premium (低楼层)",
@@ -95,14 +92,6 @@
   console.log('=== AVAILABILITY JSON ===');
   console.log(window.__availJson);
   console.log('=== END ===');
-  console.log(`✓ Extracted ${Object.keys(avail).length} days, ${ACTIVE.length} active reservations`);
-
-  // Try to copy to clipboard (may need user interaction)
-  try {
-    await navigator.clipboard.writeText(window.__availJson);
-    console.log('✓ Copied to clipboard');
-  } catch(e) {
-    console.log('Clipboard copy failed, but JSON is in window.__availJson');
-  }
+  console.log(`✓ Extracted ${Object.keys(avail).length} days, ${ACTIVE.length} active reservations (30-day rule)`);
   return result;
 })();
