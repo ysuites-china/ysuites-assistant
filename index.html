@@ -150,53 +150,54 @@ function formatAvailabilityContext() {
                Math.round(ageMin/1440) + '天前';
 
   var lines = [];
-  lines.push('【实时房态 — ' + d.propertyName + '（数据' + ageStr + '从RMS抓取，每天下午4点自动更新）】');
-  lines.push('剩余数定义：' + (d.availabilityNote || '当天空出且未来30天连续无占位'));
+  lines.push('【实时房态 — ' + d.propertyName + '（' + ageStr + '更新）】');
   lines.push('');
-  lines.push('房型代码说明：');
+  lines.push('房型代码：');
   for (var code in d.categoryDisplayNames) {
     lines.push('  ' + code + ' = ' + d.categoryDisplayNames[code]);
   }
   lines.push('');
-  lines.push('每日可用房数（房型代码:剩余间数 — 已经按30天连续无占位规则过滤）：');
+  lines.push('每日剩余（数字已按全部规则过滤，直接报数即可）：');
   var keys = Object.keys(d.availability).sort();
-  // skip past dates
   var today = new Date().toISOString().slice(0,10);
+  var setsByDate = d.setsByDate || {};
   for (var i = 0; i < keys.length; i++) {
     var date = keys[i];
     if (date < today) continue;
     var a = d.availability[date];
     var parts = [];
     for (var k in a) parts.push(k + ':' + a[k]);
+    if (setsByDate[date]) {
+      for (var sk in setsByDate[date]) parts.push(sk + '-set:' + setsByDate[date][sk]);
+    }
     lines.push(date + ' → ' + parts.join(', '));
   }
   lines.push('');
   lines.push('═════ 查房规则 ═════');
   lines.push('');
-  lines.push('1. 先问租期（如客户未说）：Semester(退租12/22) / HalfYear(退租1/26或2/2) / FullYear(退租7/7或7/14)');
+  lines.push('1. 先问租期（如客户未说）：Semester(12/22) / HalfYear(1/26或2/2) / FullYear(7/7或7/14)');
   lines.push('');
-  lines.push('2. 入住日期处理：');
-  lines.push('   • 5月-6月：短租段，提醒退租≤7.1');
-  lines.push('   • 7.14 / 7.21 / 7.28：固定起租日，直接报数据');
-  lines.push('   • 7月其他日期：报数据 + 引导人工确认（推荐改7.14起）');
-  lines.push('   • 8月：报数据 + 提醒"7.28是默认最晚入住日"');
-  lines.push('   • 9月：报数据 + "具体最早可入住日看清洁排期，最晚清洁后14天或9.30，请人工确认"');
+  lines.push('2. 入住日期：');
+  lines.push('   • 5-6月：短租段，提醒退租≤7.1');
+  lines.push('   • 7.14 / 7.21 / 7.28：固定起租日，直接报数');
+  lines.push('   • 7月其他：报数 + 提醒非固定起租日，建议改 7.14 起');
+  lines.push('   • 8月：报数 + 提醒"7.28 是默认最晚入住日"');
+  lines.push('   • 9月：数字已按 8.15 后退租房源过滤，直接报数即可（清洁排期问题再让人工确认）');
   lines.push('   • 10月+：转人工');
   lines.push('');
-  lines.push('3. 周末抵达必须主动建议改前一个周五起租。识别星期几：例如2026/9/5是周六。');
+  lines.push('3. 周末入住主动建议改前一个周五。2026/9 内 9/5、9/12、9/19、9/26 均为周六。');
   lines.push('');
-  if (d.setsByCategory && (d.setsByCategory['2BR-High'] !== undefined || d.setsByCategory['2BR-Low'] !== undefined)) {
-    lines.push('4. 2BR说明：剩余总数=空床位数。整套数据见上方 setsByCategory 字段。客户要整套则直接报sets数；要单床位报rooms数。每次必须提醒"性别配对请人工确认"。');
+  var hasSets = false;
+  for (var dk in setsByDate) { if (setsByDate[dk] && Object.keys(setsByDate[dk]).length) { hasSets = true; break; } }
+  if (hasSets) {
+    lines.push('4. 2BR：2BR-High / 2BR-Low = 床位数；2BR-High-set / 2BR-Low-set = 整套数（aa.bb.01 与 aa.bb.02 同时空）。客户要整套 → 直接用 -set 数字回答"有 X 套"，无需让人工确认整套是否都空；客户要床位 → 用普通数字 + 附"性别配对请人工确认"。');
   } else {
-    lines.push('4. 2BR说明：剩余数=空床位数（暂未区分整套/单床位）。客户要整套(朋友合租整间)→直接说"需人工确认是否整套都空"。每次必须提醒"性别配对请人工确认"。严禁用"sets"一词。');
+    lines.push('4. 2BR：剩余数=床位数（本次未抓到整套数据）。客户要整套 → "需人工确认整套是否都空"。床位回答附"性别配对请人工确认"。');
   }
   lines.push('');
-  lines.push('5. 楼层：统一说"以入住时实际安排为准"，不报具体楼层数');
-  lines.push('');
-  lines.push('6. 价格：统一回答"请群内查看最新报价"');
-  lines.push('');
-  lines.push('7. 数据范围外（180天后）或缺失 → "暂未开放，请群内联系Y Suites同事"');
-  lines.push('');
+  lines.push('5. 楼层：统一"以入住时实际安排为准"，不报具体楼层数');
+  lines.push('6. 价格：统一"请群内查看最新报价"');
+  lines.push('7. 180天外或缺失 → "暂未开放，请群内联系 Y Suites 同事"');
   lines.push('8. 不得编造任何数字');
   return lines.join('\n');
 }

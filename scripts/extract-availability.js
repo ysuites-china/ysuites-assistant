@@ -45,9 +45,10 @@
   resp.Reservations.forEach(r => { if (myCatIds.has(r.OriginalCatId)) areasByCat[r.OriginalCatId].add(r.OriginalAreaId); });
   const totals = {}; for (const cid of myCatIds) totals[cid] = areasByCat[cid].size;
 
-  // Try to build areaId → unitName map from rendered Booking Chart DOM
-  // Unit name pattern: "AA.BB.1" or "AA.BB.2" for 2BR; "AA.BB" or similar for studios
+  // Build areaId → unitName map. Try multiple sources so set-detection works even
+  // when the Booking Chart DOM isn't rendered (headless / fresh tab).
   const areaIdToUnitName = {};
+  // (a) DOM (works when Booking Chart is visible)
   document.querySelectorAll('[data-section-id]').forEach(el => {
     const sid = parseInt(el.getAttribute('data-section-id'), 10);
     if (isNaN(sid)) return;
@@ -55,6 +56,22 @@
     const m = txt.match(/^([\d.]+)\s/);
     if (m) areaIdToUnitName[sid] = m[1];
   });
+  // (b) InitializeOptions Areas list
+  const areaSrc = (opts.Areas || opts.AreaList || opts.areas || []).filter(a =>
+    a && (a.PropertyId === undefined || a.PropertyId === PROPERTY_ID));
+  for (const a of areaSrc) {
+    const id = a.AreaId ?? a.Id ?? a.areaId;
+    const name = a.AreaName ?? a.Name ?? a.areaName ?? a.AreaCode;
+    if (id != null && name && !areaIdToUnitName[id]) areaIdToUnitName[id] = String(name).trim();
+  }
+  // (c) Reservation payload fields
+  for (const r of resp.Reservations) {
+    if (!myCatIds.has(r.OriginalCatId)) continue;
+    const id = r.OriginalAreaId;
+    if (id == null || areaIdToUnitName[id]) continue;
+    const n = r.AreaName ?? r.AreaCode ?? r.area_name ?? r.areaName;
+    if (n) areaIdToUnitName[id] = String(n).trim();
+  }
 
   // For 2BR categories, group areas by "AA.BB" room prefix
   const TWO_BR_CATS = new Set();
