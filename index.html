@@ -164,10 +164,12 @@ function formatAvailabilityContext() {
   lines.push('每日剩余（数字已按全部规则过滤，直接报数即可）：');
   var keys = Object.keys(d.availability).sort();
   var today = new Date().toISOString().slice(0,10);
+  var cutoff = new Date(); cutoff.setDate(cutoff.getDate() + 90);
+  var cutoffStr = cutoff.toISOString().slice(0,10);
   var setsByDate = d.setsByDate || {};
   for (var i = 0; i < keys.length; i++) {
     var date = keys[i];
-    if (date < today) continue;
+    if (date < today || date > cutoffStr) continue;
     var a = d.availability[date];
     var parts = [];
     for (var k in a) parts.push(k + ':' + a[k]);
@@ -406,6 +408,11 @@ async function sendMessage() {
         max_tokens: 800
       })
     });
+    if (!res.ok) {
+      var errBody = '';
+      try { var errData = await res.json(); errBody = JSON.stringify(errData); } catch(_) { errBody = await res.text().catch(()=>''); }
+      throw new Error('HTTP ' + res.status + ': ' + errBody.slice(0, 300));
+    }
     var data = await res.json();
     var reply = data.choices && data.choices[0] ? data.choices[0].message.content : '抱歉，暂时无法回答，请直接在群里问Y Suites同事 😊';
     typing.remove();
@@ -413,7 +420,13 @@ async function sendMessage() {
     addAIMessage(reply, null, null);
   } catch(e) {
     typing.remove();
-    addAIMessage('连接出现问题，请直接在群里问Y Suites同事 😊', null, null);
+    console.error('Qwen API error:', e.message);
+    var errMsg = e.message || '';
+    var hint = errMsg.includes('400') ? '（输入超长，请刷新页面重新开始）' :
+               errMsg.includes('401') ? '（API Key 无效）' :
+               errMsg.includes('429') ? '（请求太频繁，稍后再试）' :
+               errMsg.includes('fetch') || errMsg.includes('network') ? '（网络连接失败）' : '';
+    addAIMessage('⚠️ 连接出现问题' + hint + '，请直接在群里问Y Suites同事 😊<br><small style="opacity:0.5;font-size:11px">' + errMsg.slice(0,120) + '</small>', null, null);
   }
   isLoading = false;
   document.getElementById('send-btn').disabled = false;
