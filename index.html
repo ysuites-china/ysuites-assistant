@@ -161,36 +161,114 @@ function formatAvailabilityContext() {
     lines.push('  ' + code + ' = ' + d.categoryDisplayNames[code]);
   }
   lines.push('');
-  lines.push('每日剩余（数字已按全部规则过滤，直接报数即可）：');
-  var keys = Object.keys(d.availability).sort();
-  var today = new Date().toISOString().slice(0,10);
+  // ─── S2 pre-aggregated: min available across full lease period ───
+  // Each check-in date × lease type → min(daily avail) over all days in lease
+  // This correctly handles rooms that have a mid-lease booking (e.g. SD-HF free
+  // on Jul14 but booked from Jul19 → min = 0 → reported as unavailable).
+  function minAvailRange(startStr, endStr) {
+    var av = d.availability;
+    var result = null;
+    var start = new Date(startStr), end = new Date(endStr);
+    for (var ds in av) {
+      if (ds < startStr || ds >= endStr) continue;
+      var day = av[ds];
+      if (!result) {
+        result = {};
+        for (var cat in day) result[cat] = day[cat];
+      } else {
+        for (var cat in day) {
+          if (result[cat] === undefined) result[cat] = day[cat];
+          else if (day[cat] < result[cat]) result[cat] = day[cat];
+        }
+      }
+    }
+    return result;
+  }
+
+  var avKeys = Object.keys(d.availability).sort();
+  var lastDate = avKeys[avKeys.length - 1];
+  var today = new Date(); today.setHours(0,0,0,0);
+  var todayStr = today.toISOString().slice(0,10);
+  var setsByDate = d.setsByDate || {};
+
+  var S2_CHECKINS = [
+    { date: '2026-07-14', label: '7月14日' },
+    { date: '2026-07-21', label: '7月21日' },
+    { date: '2026-07-28', label: '7月28日' }
+  ];
+  // lease end = day AFTER last occupied day (exclusive upper bound)
+  var LEASE_ENDS = [
+    { code: 'SEM', label: 'Semester (退租12/22)', end: '2026-12-22' },
+    { code: 'HY',  label: 'Half Year (退租2/2)',  end: '2027-02-02' },
+    { code: 'FY',  label: 'Full Year (退租7/14)', end: '2027-07-14' }
+  ];
+
+  lines.push('【S2 2026 房态——租期连续可用数（核心查房数据）】');
+  lines.push('⚠️ 重要：下方每个数字 = 该起租日至退租日【每一天均有空房】的间数（取租期内最小值）。');
+  lines.push('  数字 = 0 → 该租期内某天已被订满，该房型对此租期不可用，不要推给客户。');
+  lines.push('  数字 > 0 → 租期内持续有空，可以直接报数推客户。');
+  lines.push('  注：数据覆盖范围为今日起 180 天（' + lastDate + '），超出范围的租期为已有数据范围内的保守估计。');
+  lines.push('');
+
+  for (var ci = 0; ci < S2_CHECKINS.length; ci++) {
+    var checkin = S2_CHECKINS[ci];
+    if (checkin.date < todayStr) continue;
+    lines.push('  【起租日 ' + checkin.label + ' / ' + checkin.date + '】');
+    for (var li = 0; li < LEASE_ENDS.length; li++) {
+      var lease = LEASE_ENDS[li];
+      var effectiveEnd = lease.end <= lastDate ? lease.end : lastDate;
+      var coverage = lease.end <= lastDate ? '完整覆盖' : '数据覆盖至 ' + lastDate;
+      var mins = minAvailRange(checkin.date, effectiveEnd);
+      if (!mins) {
+        lines.push('    ' + lease.code + ' [' + lease.label + ', ' + coverage + ']：暂无数据');
+        continue;
+      }
+      var parts = [];
+      for (var cat in mins) parts.push(cat + ':' + mins[cat]);
+      // append set data for 2BR if available (use same min logic)
+      if (setsByDate) {
+        var setCats = {};
+        for (var ds2 in setsByDate) {
+          if (ds2 < checkin.date || ds2 >= effectiveEnd) continue;
+          for (var sk in setsByDate[ds2]) {
+            if (setCats[sk] === undefined) setCats[sk] = setsByDate[ds2][sk];
+            else if (setsByDate[ds2][sk] < setCats[sk]) setCats[sk] = setsByDate[ds2][sk];
+          }
+        }
+        for (var sk2 in setCats) parts.push(sk2 + '-set:' + setCats[sk2]);
+      }
+      lines.push('    ' + lease.code + ' [' + lease.label + ', ' + coverage + ']：' + parts.join(', '));
+    }
+    lines.push('');
+  }
+
+  lines.push('【近期逐日房态（供短租 / 5-6月 / 8月起入住等非标准日期查询）】');
   var cutoff = new Date(); cutoff.setDate(cutoff.getDate() + 90);
   var cutoffStr = cutoff.toISOString().slice(0,10);
-  var setsByDate = d.setsByDate || {};
-  for (var i = 0; i < keys.length; i++) {
-    var date = keys[i];
-    if (date < today || date > cutoffStr) continue;
+  for (var i = 0; i < avKeys.length; i++) {
+    var date = avKeys[i];
+    if (date < todayStr || date > cutoffStr) continue;
     var a = d.availability[date];
-    var parts = [];
-    for (var k in a) parts.push(k + ':' + a[k]);
+    var dparts = [];
+    for (var k in a) dparts.push(k + ':' + a[k]);
     if (setsByDate[date]) {
-      for (var sk in setsByDate[date]) parts.push(sk + '-set:' + setsByDate[date][sk]);
+      for (var sk3 in setsByDate[date]) dparts.push(sk3 + '-set:' + setsByDate[date][sk3]);
     }
-    lines.push(date + ' → ' + parts.join(', '));
+    lines.push(date + ' → ' + dparts.join(', '));
   }
   lines.push('');
+
   lines.push('═════ 查房规则 ═════');
   lines.push('');
   lines.push('1. 先问租期（如客户未说）：Semester(12/22) / HalfYear(1/26或2/2) / FullYear(7/7或7/14)');
   lines.push('');
   lines.push('2. 入住日期：');
-  lines.push('   • 5-6月：短租段，提醒退租≤7.1');
-  lines.push('   • 7.14 / 7.21 / 7.28：固定起租日，直接报数');
-  lines.push('   • 7月非固定日，必须 fix 到同周固定起租日（lease start 用固定日，客户可晚到，多几天租金照付）：');
-  lines.push('       7.15-7.20 → fix 到 7.14');
-  lines.push('       7.22-7.27 → fix 到 7.21');
-  lines.push('       回答模板：例 客户问 7.24 → 答 7.24 需 fix 到 7.21 起租；该周房态 SP-H:X / SP-L:Y / 2BR-H:Z…；客户可 7.24 实际入住，租金从 7.21 起算。严禁说"灵活入住"或"无需调价"。');
-  lines.push('   • 8月：报数 + 提醒"7.28 是默认最晚入住日"');
+  lines.push('   • S2 固定起租日 (7.14 / 7.21 / 7.28)：直接用上方【S2 2026 房态】对应【起租日 + 租期】行的数字，不要用逐日数字');
+  lines.push('   • 7月非固定日，必须 fix 到同周固定起租日，再查该固定起租日+租期的聚合数字：');
+  lines.push('       7.15-7.20 → fix 到 7.14；7.22-7.27 → fix 到 7.21');
+  lines.push('       回答模板：例 客户问 7.24 → 答 7.24 需 fix 到 7.21 起租；该周 [租期] 房态 SP-H:X / SP-L:Y / SD-H:Z…；客户可 7.24 实际入住，租金从 7.21 起算。严禁说"灵活入住"或"无需调价"。');
+  lines.push('   • 5-6月短租：用逐日数字，提醒退租≤7.1');
+  lines.push('   • 8月：用逐日数字 + 提醒"7.28 是默认最晚入住日"');
   lines.push('   • 9月：数字已按 8.15 后退租房源过滤，直接报数即可（清洁排期问题再让人工确认）');
   lines.push('   • 10月+：转人工');
   lines.push('');
