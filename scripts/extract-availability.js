@@ -2,8 +2,8 @@
  * Extract availability from RMS Cloud Booking Chart.
  * Rules:
  *  - Base: unit "available" on D = free on D AND no reservation in [D, D+30 days)
- *  - Sept (9.1-9.30) extra: last reservation end before D must be > 2026-08-15
- *    (long-vacant units are held back for short-term customers)
+ *  - Sept (9.1-9.30) extra: last reservation end before D must be >= 2026-08-01
+ *    (rooms empty since July or earlier are excluded; only fresh Aug-checkout rooms shown)
  *  - 2BR sets: if scheduler DOM is available, parse unit names like "08.14.1" /
  *    "08.14.2" and detect when both beds in same room are free → count as 1 set
  *
@@ -12,7 +12,9 @@
  */
 (async () => {
   const PROPERTY_ID = 9, DAYS_AHEAD = 180, LOOKAHEAD_DAYS = 30;
-  const FRESH_VACATE_CUTOFF = new Date('2026-08-15T00:00:00').getTime();
+  // Sept filter: room is eligible for Sep if its last checkout is >= Aug 1
+  // (> 2026-07-31 is equivalent to >= 2026-08-01)
+  const FRESH_VACATE_CUTOFF = new Date('2026-07-31T23:59:59').getTime();
   const SEPT_START = new Date('2026-09-01T00:00:00').getTime();
   const SEPT_END = new Date('2026-09-30T23:59:59').getTime();
   const TODAY = new Date(); TODAY.setHours(0,0,0,0);
@@ -146,7 +148,7 @@
     lastUpdated: new Date().toISOString(),
     propertyName: 'Y Suites on Margaret',
     propertyCode: 'YSMG',
-    availabilityRule: '30day-continuous + Sep-only-recently-vacated (cutoff 2026-08-15)' + (hasUnitNames ? ' + 2BR-sets' : ''),
+    availabilityRule: '30day-continuous + Sep-only-recently-vacated (cutoff Aug 1 = vacated Aug or later)' + (hasUnitNames ? ' + 2BR-sets' : ''),
     categoryDisplayNames: {
       "SP-High": "Studio Premium (高楼层)", "SP-Low": "Studio Premium (低楼层)",
       "SD-High": "Studio Deluxe (高楼层)", "SD-Low": "Studio Deluxe (低楼层)",
