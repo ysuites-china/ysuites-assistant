@@ -504,7 +504,8 @@ async function sendMessage() {
     typing.remove();
     console.error('Qwen API error:', e.message);
     var errMsg = e.message || '';
-    var hint = errMsg.includes('400') ? '（输入超长，请刷新页面重新开始）' :
+    var hint = (errMsg.includes('400') && (errMsg.includes('Access denied') || errMsg.includes('account') || errMsg.includes('standing'))) ? '（API账户异常，请联系管理员检查Qwen API Key是否有效）' :
+               errMsg.includes('400') ? '（输入超长，请刷新页面重新开始）' :
                errMsg.includes('401') ? '（API Key 无效）' :
                errMsg.includes('429') ? '（请求太频繁，稍后再试）' :
                errMsg.includes('fetch') || errMsg.includes('network') ? '（网络连接失败）' : '';
