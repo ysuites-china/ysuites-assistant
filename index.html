@@ -485,9 +485,9 @@ async function sendMessage() {
         model: MODEL,
         messages: [
           { role: 'system', content: SYSTEMS[currentProject || 'both'] + '\n\n' + (currentProject === 'starvia' ? '【实时房态】Starvia by Y Suites（Fortress Hill, 香港项目）暂无实时房态数据接入。被问到 Starvia 房态时，统一回答"实时房态请群内查询置顶或联系 Y Suites 同事确认"。绝对禁止使用任何数字编造房态。' : formatAvailabilityContext()) },
-          ...chatHistory
+          ...chatHistory.slice(-8)
         ],
-        max_tokens: 800
+        max_tokens: 500
       })
     });
     if (!res.ok) {
