@@ -31,6 +31,9 @@ body{font-family:'Montserrat','PingFang SC','Microsoft YaHei',sans-serif;backgro
 .project-btn .name{color:white;font-weight:800;font-size:15px;font-family:inherit}
 .project-btn .desc{color:rgba(255,255,255,0.4);font-size:11px;margin-top:3px;font-family:inherit}
 
+.both-btn{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 20px;cursor:pointer;color:rgba(255,255,255,0.5);font-size:12px;font-weight:600;font-family:inherit;-webkit-appearance:none}
+.both-btn:active{background:rgba(255,255,255,0.08)}
+
 /* Chat screen */
 #chat-screen{width:100%;max-width:680px;position:fixed;top:56px;left:0;right:0;bottom:0;display:none;flex-direction:column;overflow:hidden}
 #messages{position:absolute;top:0;left:0;right:0;bottom:80px;overflow-y:scroll;-webkit-overflow-scrolling:touch;padding:16px 16px 8px;display:flex;flex-direction:column;gap:14px}
@@ -94,6 +97,7 @@ body{font-family:'Montserrat','PingFang SC','Microsoft YaHei',sans-serif;backgro
     <div class="name">Starvia by Y Suites</div>
     <div class="desc">香港 · Fortress Hill · 246床 · 2026年8月开业</div>
   </button>
+  <button class="both-btn" onclick="startProject('both')">两个项目都想了解 →</button>
 </div>
 
 <!-- Chat Screen -->
@@ -311,7 +315,8 @@ var FLOWS = {
     { id:"sv5", text:"📋 **申请流程（8步）**\n\n1️⃣ 官网选项目 → Book Now\n2️⃣ 填客户信息 + **中介信息（Agent Code + 顾问名 + 顾问邮箱，必填！）**\n3️⃣ 备注特殊需求（楼层/性别/团订等）\n4️⃣ 群内报备住户姓名\n5️⃣ 等Offer → 锁定价格，暂无需付款\n6️⃣ 递交即锁房（无需马上付款）→ Y Suites 统一通知后 **48小时内** 付清：**2个月押金 + 1个月定金**（定金不退，计入首月租金）\n7️⃣ 收确认信及合约，按时签署\n8️⃣ 剩余租金 **7月15日前** 付清\n\n⚠️ 无No Visa No Pay政策", options:["我全了解了！","还有问题想问"] },
     { id:"sv_faq", text:"❓ **Y Suites香港炮台山项目 常见问题 FAQ**\n\n**Q1 入住时间？**\n租约固定12个月，起租日2026年8月9–19日内灵活选择，退租为起租后365天。\n\n**Q2 押金和定金是多少？**\n收Offer后48小时内付清：2个月押金（可退）+ 1个月定金（不退，计入首月租金）。\n\n**Q3 中途可以退租吗？**\n不支持中途退租。可转租，须经管理方审批，租客自行找继任人，手续费HKD 1,500。\n\n**Q4 剩余租金什么时候付？**\n剩余租金7月15日前一次性付清（EB订单付10个月，非EB付11个月）。\n\n**Q5 Early Bird优惠包含什么？**\n代码26SYSFEARLY1：①1个月租金减免（付11个月）②6个月水电减免③HKD 300接站补贴④HKD 800八达通⑤床品套装⑥Welcome Pack。\n\n**Q6 可以双人入住吗？**\nStudio Deluxe支持双人入住，价格不变。其他房型原则上不支持，如被问则说须Queen床+全部室友同意+管理方批准。\n\n**Q7 水电费怎么收？**\nHKD 500/月/床（Early Bird前6个月免，实付HKD 3,000/年），预缴后一律不退。\n\n**Q8 没有香港Offer/签证可以申请吗？**\n可先锁房，入住前提供学生证明即可。暂无No Offer No Pay政策。非学生/新毕业生可case by case申请，需说明为特殊安排。\n\n**Q9 可以指定楼层或室友吗？**\n申请备注填写偏好，管理方基于先到先得尽量满足但不作保证。\n\n**Q10 中介佣金怎么结算？**\n申请表中介信息必填（Agent Code+顾问姓名+邮箱），递交后群内报备客户姓名，佣金结算咨询 China Team。", options:["我全了解了！","还有问题想问"] },
     { id:"sv_done", text:"🎉 你已掌握Starvia的核心信息！\n\n随时可以继续问我任何问题，复杂问题直接在群里找Y Suites同事就好 😊", options:null }
-  ]
+  ],
+  both: "【🔴 CRITICAL FACTS OVERRIDE】MG：开业2025-02-17；Redfern=火车站非地铁；SP仅单人；未成年不受理。FH：小型宠物可申请（非禁止）；起租8.9–8.19；价格=折后均价。\n• MG公共设施只能描述：健身房（24hr）、洗衣房（收费，无免费次数）、学习室、小组讨论室、影音房、自动快递柜（SMS通知）、自行车存放室；S2新增：住户App、自助Check-in机、清洁机器人、递送机器人（仅限住户，不对外开放）。\n• LANGUAGE: If user writes in English → reply 100% in English, zero Chinese characters. If Chinese or mixed → reply in Chinese.\n\n你是Y Suites中介内部培训助手（内部专用）。\n\n" + SHARED_RULES + "\n\nMG知识库：\n" + MG_KB + "\n\nStarvia知识库：\n" + STARVIA_KB + "\n\n规则：1.说话自然有活人感。2.MG价格促销以群内最新为准。3.Starvia价格只提Early Bird均摊月租。4.不确定内容以群内答复为准。5.不攻击竞品。6.适当用emoji。7.回答必须简洁直接，控制在3-5句话内。8.Starvia面积是实际净使用面积，推荐时必须带m²数字。"
 };
 
 var SHARED_RULES = "【🚨 反幻觉硬规则（最高优先级）🚨】\n① KB没有的不编造。② 不猜：任何数字/日期/代码/促销/政策不确定时说【请群内联系Y Suites同事确认】，禁用\"大概/应该/可能\"。③ 促销只引用KB已列代码（MG=S226MGEARLYTI/S226MGEARLYTFY；Starvia=26SYSFEARLY1），不自创。④ 不混淆项目：MG=悉尼/Starvia=香港；起租日/房型完全不同，不跨项目套用任何字段。⑤ 搞不定统一说【请群内联系Y Suites同事确认】。⑥ 不凭训练记忆——一切以知识库为准。\n\n【💰 默认销售思维】帮中介拿单+拿更大单。三步：① 务实推（按预算/需求给最合适方案）→ ② 聪明推（加高一档选项+一句卖点）→ ③ 钩子推（结尾给行动指令，如\"建议尽快递交/帮你整理对比表\"）。预算vs偏好冲突必须同时给A方案（满足预算）+ B方案（满足偏好），各配卖点，绝不直接劝退。\n\n【🚫 永久禁止】• 禁止任何拉群/邀请客户进群表述——Y Suites不与客户建群。• 禁止提出助手无法完成的动作（生成PDF/图片/文件/语音稿等）——只能输出对话窗口内的文字。• 能直接交付的内容（文案/表格/话术）立即给出，不先问\"要不要\"。• 禁止自我说明（不出现\"（注：按知识库……）\"\"（无编造）\"等备注）。• 语言：纯英文提问→100%英文回复，零中文字符；中文/夹杂→全中文。• 彩蛋：消息里逐字出现\"Sitara\"时回复：这个人我认识！我是她的外置大脑 🧠 她比我懂得多，有什么我答不上来的，直接问她要答案就好。其他问题不触发。";
@@ -332,7 +337,7 @@ function startProject(proj) {
   document.getElementById('select-screen').style.display = 'none';
   var cs = document.getElementById('chat-screen');
   cs.style.display = 'flex';
-  var labels = { mg:'Sydney · MG', starvia:'Hong Kong · Starvia' };
+  var labels = { mg:'Sydney · MG', starvia:'Hong Kong · Starvia', both:'Sydney & Hong Kong' };
   document.getElementById('header-sub').textContent = labels[proj];
 
   var header = document.getElementById('main-header');
@@ -342,6 +347,15 @@ function startProject(proj) {
   backBtn.onclick = goBack;
   header.querySelector('.header-left').prepend(backBtn);
 
+  if (proj === 'both') {
+    currentFlow = null;
+    setTimeout(function() {
+      addAIMessage("你好！👋 我是 **Y Suites助手**，可以回答关于悉尼MG和香港Starvia的所有问题，直接问我吧！", null, null);
+      document.getElementById('send-btn').disabled = false;
+    }, 150);
+    document.getElementById('msg-input').focus();
+    return;
+  }
   currentFlow = FLOWS[proj];
   flowIndex = 0;
   document.getElementById('send-btn').disabled = true;
@@ -368,7 +382,7 @@ function showFlowStep(index) {
   if (!step) return;
   setTimeout(function() {
     addAIMessage(step.text, step.options, step.id);
-  }, index === 0 ? 0 : 300);
+  }, index === 0 ? 150 : 300);
 }
 
 function handleOption(option, flowId) {
@@ -485,7 +499,7 @@ async function sendMessage() {
       body: JSON.stringify({
         model: MODEL,
         messages: [
-          { role: 'system', content: SYSTEMS[currentProject || 'mg'] + '\n\n' + (currentProject === 'starvia' ? '【实时房态】Starvia by Y Suites（Fortress Hill, 香港项目）暂无实时房态数据接入。被问到 Starvia 房态时，统一回答"实时房态请群内查询置顶或联系 Y Suites 同事确认"。绝对禁止使用任何数字编造房态。' : formatAvailabilityContext()) },
+          { role: 'system', content: SYSTEMS[currentProject || 'both'] + '\n\n' + (currentProject === 'starvia' ? '【实时房态】Starvia by Y Suites（Fortress Hill, 香港项目）暂无实时房态数据接入。被问到 Starvia 房态时，统一回答"实时房态请群内查询置顶或联系 Y Suites 同事确认"。绝对禁止使用任何数字编造房态。' : formatAvailabilityContext()) },
           ...chatHistory.slice(-6)
         ],
         max_tokens: 500,
