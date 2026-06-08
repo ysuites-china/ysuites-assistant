@@ -342,6 +342,10 @@ function startProject(proj) {
   backBtn.onclick = goBack;
   header.querySelector('.header-left').prepend(backBtn);
 
+  currentFlow = FLOWS[proj];
+  flowIndex = 0;
+  document.getElementById('send-btn').disabled = true;
+  showFlowStep(0);
   document.getElementById('msg-input').focus();
 }
 
