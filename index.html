@@ -114,7 +114,7 @@ body{font-family:'Montserrat','PingFang SC','Microsoft YaHei',sans-serif;backgro
 // ═══════════════════════════════════════
 // API key removed — handled securely by Cloudflare Worker
 var API_URL = "https://sweet-surf-4f4d.stcheung33.workers.dev/";
-var MODEL = "qwen3.7-plus";
+var MODEL = "qwen-plus";
 // ═══════════════════════════════════════
 
 // ═══════════════════════════════════════
@@ -485,7 +485,6 @@ async function sendMessage() {
           ...chatHistory.slice(-6)
         ],
         max_tokens: 500,
-        enable_thinking: false
       })
     });
     if (!res.ok) {
