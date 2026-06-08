@@ -112,8 +112,8 @@ body{font-family:'Montserrat','PingFang SC','Microsoft YaHei',sans-serif;backgro
 // ═══════════════════════════════════════
 // 🔑 API配置 — 替换为你的通义千问API Key
 // ═══════════════════════════════════════
-var API_KEY = "sk-78e001ff887342949f25755aae3dc819";
-var API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
+// API key removed — handled securely by Cloudflare Worker
+var API_URL = "https://sweet-surf-4f4d.stcheung33.workers.dev/";
 var MODEL = "qwen3.7-plus";
 // ═══════════════════════════════════════
 
@@ -477,7 +477,6 @@ async function sendMessage() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + API_KEY
       },
       body: JSON.stringify({
         model: MODEL,
